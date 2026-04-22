@@ -50,6 +50,10 @@ http://localhost:8080/swagger/openapi.json
 
 - `POST /api/v1/tasks`
 - `GET /api/v1/tasks`
+- `GET /api/v1/tasks?calendar_at=25.03.2026 10:10`
 - `GET /api/v1/tasks/{id}`
 - `PUT /api/v1/tasks/{id}`
 - `DELETE /api/v1/tasks/{id}`
+- `POST /api/v1/tasks/{id}/occurrences/complete`
+
+Для календарных полей и фильтров используется формат даты и времени `dd.mm.yyyy hh:mm`.
