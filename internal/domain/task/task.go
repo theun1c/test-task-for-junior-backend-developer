@@ -15,6 +15,8 @@ type Task struct {
 	Title               string               `json:"title"`
 	Description         string               `json:"description"`
 	Status              Status               `json:"status"`
+	ScheduleStartAt     *time.Time           `json:"schedule_start_at,omitempty"`
+	ScheduleEndAt       *time.Time           `json:"schedule_end_at,omitempty"`
 	PeriodicitySettings *PeriodicitySettings `json:"periodicity_settings,omitempty"`
 	CreatedAt           time.Time            `json:"created_at"`
 	UpdatedAt           time.Time            `json:"updated_at"`

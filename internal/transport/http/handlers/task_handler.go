@@ -27,12 +27,13 @@ func (h *TaskHandler) Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	created, err := h.usecase.Create(r.Context(), taskusecase.CreateInput{
-		Title:               req.Title,
-		Description:         req.Description,
-		Status:              req.Status,
-		PeriodicitySettings: req.PeriodicitySettings,
-	})
+	input, err := req.toCreateInput()
+	if err != nil {
+		writeError(w, http.StatusBadRequest, err)
+		return
+	}
+
+	created, err := h.usecase.Create(r.Context(), input)
 	if err != nil {
 		writeUsecaseError(w, err)
 		return
@@ -70,12 +71,13 @@ func (h *TaskHandler) Update(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	updated, err := h.usecase.Update(r.Context(), id, taskusecase.UpdateInput{
-		Title:               req.Title,
-		Description:         req.Description,
-		Status:              req.Status,
-		PeriodicitySettings: req.PeriodicitySettings,
-	})
+	input, err := req.toUpdateInput()
+	if err != nil {
+		writeError(w, http.StatusBadRequest, err)
+		return
+	}
+
+	updated, err := h.usecase.Update(r.Context(), id, input)
 	if err != nil {
 		writeUsecaseError(w, err)
 		return
@@ -100,7 +102,23 @@ func (h *TaskHandler) Delete(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *TaskHandler) List(w http.ResponseWriter, r *http.Request) {
-	tasks, err := h.usecase.List(r.Context())
+	var (
+		tasks []taskdomain.Task
+		err   error
+	)
+
+	calendarAtRaw := r.URL.Query().Get("calendar_at")
+	if calendarAtRaw == "" {
+		tasks, err = h.usecase.List(r.Context())
+	} else {
+		calendarAt, parseErr := parseCalendarDateTime(calendarAtRaw)
+		if parseErr != nil {
+			writeError(w, http.StatusBadRequest, parseErr)
+			return
+		}
+
+		tasks, err = h.usecase.ListForCalendar(r.Context(), calendarAt)
+	}
 	if err != nil {
 		writeUsecaseError(w, err)
 		return
@@ -112,6 +130,33 @@ func (h *TaskHandler) List(w http.ResponseWriter, r *http.Request) {
 	}
 
 	writeJSON(w, http.StatusOK, response)
+}
+
+func (h *TaskHandler) CompleteOccurrence(w http.ResponseWriter, r *http.Request) {
+	id, err := getIDFromRequest(r)
+	if err != nil {
+		writeError(w, http.StatusBadRequest, err)
+		return
+	}
+
+	var req completeOccurrenceDTO
+	if err := decodeJSON(r, &req); err != nil {
+		writeError(w, http.StatusBadRequest, err)
+		return
+	}
+
+	scheduledFor, err := parseCalendarDateTime(req.ScheduledFor)
+	if err != nil {
+		writeError(w, http.StatusBadRequest, err)
+		return
+	}
+
+	if err := h.usecase.CompleteOccurrence(r.Context(), id, scheduledFor); err != nil {
+		writeUsecaseError(w, err)
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
 }
 
 func getIDFromRequest(r *http.Request) (int64, error) {
