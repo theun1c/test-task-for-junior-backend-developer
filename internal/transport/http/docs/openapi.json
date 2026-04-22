@@ -3,7 +3,7 @@
   "info": {
     "title": "Task Service API",
     "version": "1.0.0",
-    "description": "CRUD API for tasks built with clean architecture."
+    "description": "HTTP API for tasks with calendar-based periodicity."
   },
   "servers": [
     {
@@ -21,6 +21,18 @@
       "get": {
         "tags": ["Tasks"],
         "summary": "List tasks",
+        "parameters": [
+          {
+            "name": "calendar_at",
+            "in": "query",
+            "required": false,
+            "description": "Calendar date and time in format dd.mm.yyyy hh:mm",
+            "schema": {
+              "type": "string",
+              "example": "25.03.2026 10:10"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Task list",
@@ -32,7 +44,8 @@
                 }
               }
             }
-          }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" }
         }
       },
       "post": {
@@ -131,6 +144,33 @@
           "404": { "$ref": "#/components/responses/NotFound" }
         }
       }
+    },
+    "/api/v1/tasks/{id}/occurrences/complete": {
+      "post": {
+        "tags": ["Tasks"],
+        "summary": "Complete a calendar occurrence",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "integer", "format": "int64", "minimum": 1 }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/CompleteOccurrenceRequest" }
+            }
+          }
+        },
+        "responses": {
+          "204": { "description": "Occurrence completed" },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "404": { "$ref": "#/components/responses/NotFound" }
+        }
+      }
     }
   },
   "components": {
@@ -170,6 +210,14 @@
             "enum": ["new", "in_progress", "done"],
             "example": "new"
           },
+          "schedule_start_at": {
+            "type": "string",
+            "example": "25.03.2026 10:10"
+          },
+          "schedule_end_at": {
+            "type": "string",
+            "example": "25.04.2026 10:10"
+          },
           "periodicity_settings": {
             "$ref": "#/components/schemas/PeriodicitySettings"
           }
@@ -192,8 +240,26 @@
             "enum": ["new", "in_progress", "done"],
             "example": "in_progress"
           },
+          "schedule_start_at": {
+            "type": "string",
+            "example": "25.03.2026 10:10"
+          },
+          "schedule_end_at": {
+            "type": "string",
+            "example": "25.04.2026 10:10"
+          },
           "periodicity_settings": {
             "$ref": "#/components/schemas/PeriodicitySettings"
+          }
+        }
+      },
+      "CompleteOccurrenceRequest": {
+        "type": "object",
+        "required": ["scheduled_for"],
+        "properties": {
+          "scheduled_for": {
+            "type": "string",
+            "example": "25.03.2026 10:10"
           }
         }
       },
@@ -220,10 +286,9 @@
           "specific_datetimes": {
             "type": "array",
             "items": {
-              "type": "string",
-              "format": "date-time"
+              "type": "string"
             },
-            "example": ["2026-10-25T10:00:00+03:00"]
+            "example": ["25.03.2026 10:10"]
           },
           "day_parity": {
             "type": "string",
@@ -245,6 +310,14 @@
             "type": "string",
             "enum": ["new", "in_progress", "done"],
             "example": "new"
+          },
+          "schedule_start_at": {
+            "type": "string",
+            "example": "25.03.2026 10:10"
+          },
+          "schedule_end_at": {
+            "type": "string",
+            "example": "25.04.2026 10:10"
           },
           "periodicity_settings": {
             "$ref": "#/components/schemas/PeriodicitySettings"
