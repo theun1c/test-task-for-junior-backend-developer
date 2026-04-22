@@ -22,7 +22,7 @@ docker compose down -v
 docker compose up --build
 ```
 
-Причина в том, что SQL-файл из `migrations/0001_create_tasks.up.sql` монтируется в `docker-entrypoint-initdb.d` и применяется только при инициализации пустого data volume.
+Причина в том, что SQL-файлы из директории `migrations/` монтируются в `docker-entrypoint-initdb.d` и применяются только при инициализации пустого data volume.
 
 ## Swagger
 
