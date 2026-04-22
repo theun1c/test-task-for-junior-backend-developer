@@ -23,13 +23,15 @@ type Usecase interface {
 }
 
 type CreateInput struct {
-	Title       string
-	Description string
-	Status      taskdomain.Status
+	Title               string
+	Description         string
+	Status              taskdomain.Status
+	PeriodicitySettings *taskdomain.PeriodicitySettings
 }
 
 type UpdateInput struct {
-	Title       string
-	Description string
-	Status      taskdomain.Status
+	Title               string
+	Description         string
+	Status              taskdomain.Status
+	PeriodicitySettings *taskdomain.PeriodicitySettings
 }

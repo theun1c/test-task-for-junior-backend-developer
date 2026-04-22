@@ -28,9 +28,10 @@ func (s *Service) Create(ctx context.Context, input CreateInput) (*taskdomain.Ta
 	}
 
 	model := &taskdomain.Task{
-		Title:       normalized.Title,
-		Description: normalized.Description,
-		Status:      normalized.Status,
+		Title:               normalized.Title,
+		Description:         normalized.Description,
+		Status:              normalized.Status,
+		PeriodicitySettings: normalized.PeriodicitySettings,
 	}
 	now := s.now()
 	model.CreatedAt = now
@@ -63,11 +64,12 @@ func (s *Service) Update(ctx context.Context, id int64, input UpdateInput) (*tas
 	}
 
 	model := &taskdomain.Task{
-		ID:          id,
-		Title:       normalized.Title,
-		Description: normalized.Description,
-		Status:      normalized.Status,
-		UpdatedAt:   s.now(),
+		ID:                  id,
+		Title:               normalized.Title,
+		Description:         normalized.Description,
+		Status:              normalized.Status,
+		PeriodicitySettings: normalized.PeriodicitySettings,
+		UpdatedAt:           s.now(),
 	}
 
 	updated, err := s.repo.Update(ctx, model)
