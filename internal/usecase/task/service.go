@@ -30,7 +30,7 @@ func (s *Service) Create(ctx context.Context, input CreateInput) (*taskdomain.Ta
 	model := &taskdomain.Task{
 		Title:               normalized.Title,
 		Description:         normalized.Description,
-		Status:              normalized.Status,
+		State:               normalized.State,
 		ScheduleStartAt:     normalized.ScheduleStartAt,
 		ScheduleEndAt:       normalized.ScheduleEndAt,
 		PeriodicitySettings: normalized.PeriodicitySettings,
@@ -69,7 +69,7 @@ func (s *Service) Update(ctx context.Context, id int64, input UpdateInput) (*tas
 		ID:                  id,
 		Title:               normalized.Title,
 		Description:         normalized.Description,
-		Status:              normalized.Status,
+		State:               normalized.State,
 		ScheduleStartAt:     normalized.ScheduleStartAt,
 		ScheduleEndAt:       normalized.ScheduleEndAt,
 		PeriodicitySettings: normalized.PeriodicitySettings,
@@ -137,12 +137,12 @@ func validateCreateInput(input CreateInput) (CreateInput, error) {
 		return CreateInput{}, fmt.Errorf("%w: title is required", ErrInvalidInput)
 	}
 
-	if input.Status == "" {
-		input.Status = taskdomain.StatusNew
+	if input.State == "" {
+		input.State = taskdomain.StateActive
 	}
 
-	if !input.Status.Valid() {
-		return CreateInput{}, fmt.Errorf("%w: invalid status", ErrInvalidInput)
+	if !input.State.Valid() {
+		return CreateInput{}, fmt.Errorf("%w: invalid state", ErrInvalidInput)
 	}
 
 	if err := validateSchedule(input.ScheduleStartAt, input.ScheduleEndAt, input.PeriodicitySettings); err != nil {
@@ -160,8 +160,8 @@ func validateUpdateInput(input UpdateInput) (UpdateInput, error) {
 		return UpdateInput{}, fmt.Errorf("%w: title is required", ErrInvalidInput)
 	}
 
-	if !input.Status.Valid() {
-		return UpdateInput{}, fmt.Errorf("%w: invalid status", ErrInvalidInput)
+	if !input.State.Valid() {
+		return UpdateInput{}, fmt.Errorf("%w: invalid state", ErrInvalidInput)
 	}
 
 	if err := validateSchedule(input.ScheduleStartAt, input.ScheduleEndAt, input.PeriodicitySettings); err != nil {

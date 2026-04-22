@@ -168,6 +168,7 @@
         "responses": {
           "204": { "description": "Occurrence completed" },
           "400": { "$ref": "#/components/responses/BadRequest" },
+          "409": { "$ref": "#/components/responses/Conflict" },
           "404": { "$ref": "#/components/responses/NotFound" }
         }
       }
@@ -190,6 +191,14 @@
             "schema": { "$ref": "#/components/schemas/Error" }
           }
         }
+      },
+      "Conflict": {
+        "description": "Conflict",
+        "content": {
+          "application/json": {
+            "schema": { "$ref": "#/components/schemas/Error" }
+          }
+        }
       }
     },
     "schemas": {
@@ -205,10 +214,10 @@
             "type": "string",
             "example": "Collect release notes and check migrations"
           },
-          "status": {
+          "state": {
             "type": "string",
-            "enum": ["new", "in_progress", "done"],
-            "example": "new"
+            "enum": ["active", "paused", "archived"],
+            "example": "active"
           },
           "schedule_start_at": {
             "type": "string",
@@ -225,7 +234,7 @@
       },
       "UpdateTaskRequest": {
         "type": "object",
-        "required": ["title", "status"],
+        "required": ["title", "state"],
         "properties": {
           "title": {
             "type": "string",
@@ -235,10 +244,10 @@
             "type": "string",
             "example": "Collect release notes and check migrations"
           },
-          "status": {
+          "state": {
             "type": "string",
-            "enum": ["new", "in_progress", "done"],
-            "example": "in_progress"
+            "enum": ["active", "paused", "archived"],
+            "example": "paused"
           },
           "schedule_start_at": {
             "type": "string",
@@ -306,10 +315,10 @@
             "type": "string",
             "example": "Collect release notes and check migrations"
           },
-          "status": {
+          "state": {
             "type": "string",
-            "enum": ["new", "in_progress", "done"],
-            "example": "new"
+            "enum": ["active", "paused", "archived"],
+            "example": "active"
           },
           "schedule_start_at": {
             "type": "string",

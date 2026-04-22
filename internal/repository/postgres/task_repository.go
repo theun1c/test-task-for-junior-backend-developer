@@ -31,7 +31,7 @@ func (r *Repository) Create(ctx context.Context, task *taskdomain.Task) (*taskdo
 		INSERT INTO tasks (
 			title,
 			description,
-			status,
+			state,
 			schedule_start_at,
 			schedule_end_at,
 			periodicity_settings,
@@ -39,7 +39,7 @@ func (r *Repository) Create(ctx context.Context, task *taskdomain.Task) (*taskdo
 			updated_at
 		)
 		VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-		RETURNING id, title, description, status, schedule_start_at, schedule_end_at, periodicity_settings, created_at, updated_at
+		RETURNING id, title, description, state, schedule_start_at, schedule_end_at, periodicity_settings, created_at, updated_at
 	`
 
 	row := r.pool.QueryRow(
@@ -47,7 +47,7 @@ func (r *Repository) Create(ctx context.Context, task *taskdomain.Task) (*taskdo
 		query,
 		task.Title,
 		task.Description,
-		task.Status,
+		task.State,
 		task.ScheduleStartAt,
 		task.ScheduleEndAt,
 		periodicitySettings,
@@ -64,7 +64,7 @@ func (r *Repository) Create(ctx context.Context, task *taskdomain.Task) (*taskdo
 
 func (r *Repository) GetByID(ctx context.Context, id int64) (*taskdomain.Task, error) {
 	const query = `
-		SELECT id, title, description, status, schedule_start_at, schedule_end_at, periodicity_settings, created_at, updated_at
+		SELECT id, title, description, state, schedule_start_at, schedule_end_at, periodicity_settings, created_at, updated_at
 		FROM tasks
 		WHERE id = $1
 	`
@@ -92,13 +92,13 @@ func (r *Repository) Update(ctx context.Context, task *taskdomain.Task) (*taskdo
 		UPDATE tasks
 		SET title = $1,
 			description = $2,
-			status = $3,
+			state = $3,
 			schedule_start_at = $4,
 			schedule_end_at = $5,
 			periodicity_settings = $6,
 			updated_at = $7
 		WHERE id = $8
-		RETURNING id, title, description, status, schedule_start_at, schedule_end_at, periodicity_settings, created_at, updated_at
+		RETURNING id, title, description, state, schedule_start_at, schedule_end_at, periodicity_settings, created_at, updated_at
 	`
 
 	row := r.pool.QueryRow(
@@ -106,7 +106,7 @@ func (r *Repository) Update(ctx context.Context, task *taskdomain.Task) (*taskdo
 		query,
 		task.Title,
 		task.Description,
-		task.Status,
+		task.State,
 		task.ScheduleStartAt,
 		task.ScheduleEndAt,
 		periodicitySettings,
@@ -142,7 +142,7 @@ func (r *Repository) Delete(ctx context.Context, id int64) error {
 
 func (r *Repository) List(ctx context.Context) ([]taskdomain.Task, error) {
 	const query = `
-		SELECT id, title, description, status, schedule_start_at, schedule_end_at, periodicity_settings, created_at, updated_at
+		SELECT id, title, description, state, schedule_start_at, schedule_end_at, periodicity_settings, created_at, updated_at
 		FROM tasks
 		ORDER BY id DESC
 	`
@@ -172,12 +172,21 @@ func (r *Repository) List(ctx context.Context) ([]taskdomain.Task, error) {
 
 func (r *Repository) ListCalendarCandidates(ctx context.Context, at time.Time) ([]taskdomain.Task, error) {
 	const query = `
-		SELECT id, title, description, status, schedule_start_at, schedule_end_at, periodicity_settings, created_at, updated_at
+		SELECT id, title, description, state, schedule_start_at, schedule_end_at, periodicity_settings, created_at, updated_at
 		FROM tasks
-		WHERE periodicity_settings IS NOT NULL
+		WHERE state = $2
 			AND schedule_start_at IS NOT NULL
-			AND schedule_start_at <= $1
-			AND (schedule_end_at IS NULL OR schedule_end_at >= $1)
+			AND (
+				(
+					periodicity_settings IS NOT NULL
+					AND schedule_start_at <= $1
+					AND (schedule_end_at IS NULL OR schedule_end_at >= $1)
+				)
+				OR (
+					periodicity_settings IS NULL
+					AND schedule_start_at = $1
+				)
+			)
 			AND NOT EXISTS (
 				SELECT 1
 				FROM task_completed_occurrences
@@ -187,7 +196,7 @@ func (r *Repository) ListCalendarCandidates(ctx context.Context, at time.Time) (
 		ORDER BY id DESC
 	`
 
-	rows, err := r.pool.Query(ctx, query, at)
+	rows, err := r.pool.Query(ctx, query, at, taskdomain.StateActive)
 	if err != nil {
 		return nil, err
 	}
@@ -217,9 +226,16 @@ func (r *Repository) CompleteOccurrence(ctx context.Context, taskID int64, sched
 		ON CONFLICT (task_id, scheduled_for) DO NOTHING
 	`
 
-	_, err := r.pool.Exec(ctx, query, taskID, scheduledFor, completedAt)
+	result, err := r.pool.Exec(ctx, query, taskID, scheduledFor, completedAt)
+	if err != nil {
+		return err
+	}
 
-	return err
+	if result.RowsAffected() == 0 {
+		return taskdomain.ErrOccurrenceAlreadyCompleted
+	}
+
+	return nil
 }
 
 type taskScanner interface {
@@ -229,7 +245,7 @@ type taskScanner interface {
 func scanTask(scanner taskScanner) (*taskdomain.Task, error) {
 	var (
 		task                   taskdomain.Task
-		status                 string
+		state                  string
 		scheduleStartAt        pgtype.Timestamptz
 		scheduleEndAt          pgtype.Timestamptz
 		periodicitySettingsRaw []byte
@@ -239,7 +255,7 @@ func scanTask(scanner taskScanner) (*taskdomain.Task, error) {
 		&task.ID,
 		&task.Title,
 		&task.Description,
-		&status,
+		&state,
 		&scheduleStartAt,
 		&scheduleEndAt,
 		&periodicitySettingsRaw,
@@ -254,7 +270,7 @@ func scanTask(scanner taskScanner) (*taskdomain.Task, error) {
 		return nil, err
 	}
 
-	task.Status = taskdomain.Status(status)
+	task.State = taskdomain.State(state)
 	task.ScheduleStartAt = nullableTime(scheduleStartAt)
 	task.ScheduleEndAt = nullableTime(scheduleEndAt)
 	task.PeriodicitySettings = periodicitySettings

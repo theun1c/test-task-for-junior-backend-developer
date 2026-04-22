@@ -30,7 +30,7 @@ type Usecase interface {
 type CreateInput struct {
 	Title               string
 	Description         string
-	Status              taskdomain.Status
+	State               taskdomain.State
 	ScheduleStartAt     *time.Time
 	ScheduleEndAt       *time.Time
 	PeriodicitySettings *taskdomain.PeriodicitySettings
@@ -39,7 +39,7 @@ type CreateInput struct {
 type UpdateInput struct {
 	Title               string
 	Description         string
-	Status              taskdomain.Status
+	State               taskdomain.State
 	ScheduleStartAt     *time.Time
 	ScheduleEndAt       *time.Time
 	PeriodicitySettings *taskdomain.PeriodicitySettings

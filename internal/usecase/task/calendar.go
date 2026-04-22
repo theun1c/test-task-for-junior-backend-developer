@@ -9,8 +9,8 @@ import (
 
 func validateSchedule(scheduleStartAt, scheduleEndAt *time.Time, settings *taskdomain.PeriodicitySettings) error {
 	if settings == nil {
-		if scheduleStartAt != nil || scheduleEndAt != nil {
-			return fmt.Errorf("%w: schedule fields require periodicity settings", ErrInvalidInput)
+		if scheduleEndAt != nil {
+			return fmt.Errorf("%w: schedule_end_at requires periodicity settings", ErrInvalidInput)
 		}
 
 		return nil
@@ -72,7 +72,15 @@ func validateSchedule(scheduleStartAt, scheduleEndAt *time.Time, settings *taskd
 }
 
 func matchesCalendarDateTime(task *taskdomain.Task, at time.Time) bool {
-	if task.PeriodicitySettings == nil || task.ScheduleStartAt == nil {
+	if task.State != taskdomain.StateActive {
+		return false
+	}
+
+	if task.PeriodicitySettings == nil {
+		return matchesOneTimeTask(task, at)
+	}
+
+	if task.ScheduleStartAt == nil {
 		return false
 	}
 
@@ -92,6 +100,14 @@ func matchesCalendarDateTime(task *taskdomain.Task, at time.Time) bool {
 	default:
 		return false
 	}
+}
+
+func matchesOneTimeTask(task *taskdomain.Task, at time.Time) bool {
+	if task.ScheduleStartAt == nil {
+		return false
+	}
+
+	return toLocalMinute(*task.ScheduleStartAt).Equal(toLocalMinute(at))
 }
 
 func isWithinScheduleRange(scheduleStartAt, scheduleEndAt *time.Time, at time.Time) bool {

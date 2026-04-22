@@ -18,7 +18,7 @@ type periodicitySettingsDTO struct {
 type taskMutationDTO struct {
 	Title               string                  `json:"title"`
 	Description         string                  `json:"description"`
-	Status              taskdomain.Status       `json:"status"`
+	State               taskdomain.State        `json:"state"`
 	ScheduleStartAt     *string                 `json:"schedule_start_at,omitempty"`
 	ScheduleEndAt       *string                 `json:"schedule_end_at,omitempty"`
 	PeriodicitySettings *periodicitySettingsDTO `json:"periodicity_settings,omitempty"`
@@ -28,7 +28,7 @@ type taskDTO struct {
 	ID                  int64                   `json:"id"`
 	Title               string                  `json:"title"`
 	Description         string                  `json:"description"`
-	Status              taskdomain.Status       `json:"status"`
+	State               taskdomain.State        `json:"state"`
 	ScheduleStartAt     *string                 `json:"schedule_start_at,omitempty"`
 	ScheduleEndAt       *string                 `json:"schedule_end_at,omitempty"`
 	PeriodicitySettings *periodicitySettingsDTO `json:"periodicity_settings,omitempty"`
@@ -49,7 +49,7 @@ func (dto taskMutationDTO) toCreateInput() (taskusecase.CreateInput, error) {
 	return taskusecase.CreateInput{
 		Title:               dto.Title,
 		Description:         dto.Description,
-		Status:              dto.Status,
+		State:               dto.State,
 		ScheduleStartAt:     scheduleStartAt,
 		ScheduleEndAt:       scheduleEndAt,
 		PeriodicitySettings: settings,
@@ -65,7 +65,7 @@ func (dto taskMutationDTO) toUpdateInput() (taskusecase.UpdateInput, error) {
 	return taskusecase.UpdateInput{
 		Title:               dto.Title,
 		Description:         dto.Description,
-		Status:              dto.Status,
+		State:               dto.State,
 		ScheduleStartAt:     scheduleStartAt,
 		ScheduleEndAt:       scheduleEndAt,
 		PeriodicitySettings: settings,
@@ -96,7 +96,7 @@ func newTaskDTO(task *taskdomain.Task) taskDTO {
 		ID:                  task.ID,
 		Title:               task.Title,
 		Description:         task.Description,
-		Status:              task.Status,
+		State:               task.State,
 		ScheduleStartAt:     formatOptionalCalendarDateTime(task.ScheduleStartAt),
 		ScheduleEndAt:       formatOptionalCalendarDateTime(task.ScheduleEndAt),
 		PeriodicitySettings: newPeriodicitySettingsDTO(task.PeriodicitySettings),
