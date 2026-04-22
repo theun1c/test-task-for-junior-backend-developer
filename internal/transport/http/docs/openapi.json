@@ -3,7 +3,7 @@
   "info": {
     "title": "Task Service API",
     "version": "1.0.0",
-    "description": "CRUD API for tasks built with clean architecture."
+    "description": "HTTP API for tasks with calendar-based periodicity."
   },
   "servers": [
     {
@@ -21,6 +21,18 @@
       "get": {
         "tags": ["Tasks"],
         "summary": "List tasks",
+        "parameters": [
+          {
+            "name": "calendar_at",
+            "in": "query",
+            "required": false,
+            "description": "Calendar date and time in format dd.mm.yyyy hh:mm",
+            "schema": {
+              "type": "string",
+              "example": "25.03.2026 10:10"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Task list",
@@ -32,7 +44,8 @@
                 }
               }
             }
-          }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" }
         }
       },
       "post": {
@@ -131,6 +144,34 @@
           "404": { "$ref": "#/components/responses/NotFound" }
         }
       }
+    },
+    "/api/v1/tasks/{id}/occurrences/complete": {
+      "post": {
+        "tags": ["Tasks"],
+        "summary": "Complete a calendar occurrence",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "integer", "format": "int64", "minimum": 1 }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/CompleteOccurrenceRequest" }
+            }
+          }
+        },
+        "responses": {
+          "204": { "description": "Occurrence completed" },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "409": { "$ref": "#/components/responses/Conflict" },
+          "404": { "$ref": "#/components/responses/NotFound" }
+        }
+      }
     }
   },
   "components": {
@@ -145,6 +186,14 @@
       },
       "NotFound": {
         "description": "Resource not found",
+        "content": {
+          "application/json": {
+            "schema": { "$ref": "#/components/schemas/Error" }
+          }
+        }
+      },
+      "Conflict": {
+        "description": "Conflict",
         "content": {
           "application/json": {
             "schema": { "$ref": "#/components/schemas/Error" }
@@ -165,16 +214,27 @@
             "type": "string",
             "example": "Collect release notes and check migrations"
           },
-          "status": {
+          "state": {
             "type": "string",
-            "enum": ["new", "in_progress", "done"],
-            "example": "new"
+            "enum": ["active", "paused", "archived"],
+            "example": "active"
+          },
+          "schedule_start_at": {
+            "type": "string",
+            "example": "25.03.2026 10:10"
+          },
+          "schedule_end_at": {
+            "type": "string",
+            "example": "25.04.2026 10:10"
+          },
+          "periodicity_settings": {
+            "$ref": "#/components/schemas/PeriodicitySettings"
           }
         }
       },
       "UpdateTaskRequest": {
         "type": "object",
-        "required": ["title", "status"],
+        "required": ["title", "state"],
         "properties": {
           "title": {
             "type": "string",
@@ -184,10 +244,65 @@
             "type": "string",
             "example": "Collect release notes and check migrations"
           },
-          "status": {
+          "state": {
             "type": "string",
-            "enum": ["new", "in_progress", "done"],
-            "example": "in_progress"
+            "enum": ["active", "paused", "archived"],
+            "example": "paused"
+          },
+          "schedule_start_at": {
+            "type": "string",
+            "example": "25.03.2026 10:10"
+          },
+          "schedule_end_at": {
+            "type": "string",
+            "example": "25.04.2026 10:10"
+          },
+          "periodicity_settings": {
+            "$ref": "#/components/schemas/PeriodicitySettings"
+          }
+        }
+      },
+      "CompleteOccurrenceRequest": {
+        "type": "object",
+        "required": ["scheduled_for"],
+        "properties": {
+          "scheduled_for": {
+            "type": "string",
+            "example": "25.03.2026 10:10"
+          }
+        }
+      },
+      "PeriodicitySettings": {
+        "type": "object",
+        "required": ["type"],
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": ["daily", "monthly_days", "specific_datetimes", "month_day_parity"],
+            "example": "specific_datetimes"
+          },
+          "every_n_days": {
+            "type": "integer",
+            "example": 2
+          },
+          "days_of_month": {
+            "type": "array",
+            "items": {
+              "type": "integer"
+            },
+            "example": [1, 15, 30]
+          },
+          "specific_datetimes": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "example": ["25.03.2026 10:10"]
+          },
+          "day_parity": {
+            "type": "string",
+            "enum": ["even", "odd"],
+            "example": "even"
           }
         }
       },
@@ -200,10 +315,21 @@
             "type": "string",
             "example": "Collect release notes and check migrations"
           },
-          "status": {
+          "state": {
             "type": "string",
-            "enum": ["new", "in_progress", "done"],
-            "example": "new"
+            "enum": ["active", "paused", "archived"],
+            "example": "active"
+          },
+          "schedule_start_at": {
+            "type": "string",
+            "example": "25.03.2026 10:10"
+          },
+          "schedule_end_at": {
+            "type": "string",
+            "example": "25.04.2026 10:10"
+          },
+          "periodicity_settings": {
+            "$ref": "#/components/schemas/PeriodicitySettings"
           },
           "created_at": {
             "type": "string",
